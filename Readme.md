@@ -49,7 +49,7 @@ python -m pip install ./ml-agents
 On macOS 27 the instructions may fail. A workaround is below.
 
 ```shell
-python -m pip install -r requirements-mac.txt
+python -m pip install -r requirements-mac27.txt
 
 python -m pip install --no-deps ./ml-agents-envs
 python -m pip install --no-deps ./ml-agents
