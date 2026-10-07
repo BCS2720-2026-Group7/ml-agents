@@ -41,8 +41,18 @@ Install packages. This order is necessary, since `ml-agents` depends on `ml-agen
 
 ```shell
 python -m pip install -r requirements.txt
+
 python -m pip install ./ml-agents-envs
 python -m pip install ./ml-agents
+```
+
+On macOS 27 the instructions may fail. A workaround is below.
+
+```shell
+python -m pip install -r requirements-mac.txt
+
+python -m pip install --no-deps ./ml-agents-envs
+python -m pip install --no-deps ./ml-agents
 ```
 
 Check command installation
