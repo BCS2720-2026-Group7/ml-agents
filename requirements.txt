@@ -153,8 +153,9 @@ pyyaml==6.0.3
     #   huggingface-hub
     #   mlagents
     #   mlagents-envs
-setuptools==84.0.0
+setuptools==80.10.2
     # via
+    #   -r requirements.in
     #   tensorboard
     #   torch
     #   triton
