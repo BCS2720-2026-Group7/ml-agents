@@ -37,12 +37,10 @@ Check environment activation. This must print `Python 3.10.12`, anything else me
 python --version
 ```
 
-Install packages. This order is necessary, since `ml-agents` depends on `ml-agents-envs`, and otherwise `ml-agents` will be pulled instead of built locally.
+Install packages.
 
 ```shell
 python -m pip install -r requirements.txt
-python -m pip install ./ml-agents-envs
-python -m pip install ./ml-agents
 ```
 
 Check command installation
