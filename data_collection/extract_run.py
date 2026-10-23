@@ -37,8 +37,9 @@ except ImportError:
     EventAccumulator = None
 
 
-# Column order of runs.csv. The first part follows the column names used by
-# last year's Group 7 in the shared data-collection repo, so both datasets can be merged.
+# Column order of runs.csv. Column names follow the naming used in the shared
+# BCS2720 data-collection repo, so our data can be combined with the data that
+# other groups share this year.
 RUN_COLUMNS = [
     # identification
     "run_id", "timestamp", "environment", "drl_algorithm", "seed",
