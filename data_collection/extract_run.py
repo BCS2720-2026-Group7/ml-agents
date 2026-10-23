@@ -245,7 +245,8 @@ def existing_run_ids(path):
         return {r["run_id"] for r in csv.DictReader(f)}
 
 
-def append_rows(path, columns, rows):
+def append_rows(path, columns, rows, skip_run_ids=()):
+    rows = [r for r in rows if r["run_id"] not in skip_run_ids]
     if not rows:
         return
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
@@ -292,11 +293,16 @@ def main():
             continue
         runs.append(row)
         progression += prog
+        done.add(run_id)  # the same folder passed twice is only added once
         print(f"added  {run_id}: {row['total_steps']} steps, "
               f"{row['time_elapsed_seconds']} s, reward {row['cumulative_reward_mean']}")
 
+    # progression.csv is written first and runs.csv last: a run only counts as done
+    # once it is in runs.csv, so if a write fails the run is extracted again next time.
+    # Runs already in progression.csv are not written there twice.
+    append_rows(args.progression, PROGRESSION_COLUMNS, progression,
+                skip_run_ids=existing_run_ids(args.progression))
     append_rows(args.out, RUN_COLUMNS, runs)
-    append_rows(args.progression, PROGRESSION_COLUMNS, progression)
     print(f"\n{len(runs)} new run(s) -> {args.out}")
 
 
