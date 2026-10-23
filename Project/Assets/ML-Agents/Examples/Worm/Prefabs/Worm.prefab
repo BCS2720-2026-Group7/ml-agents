@@ -951,7 +951,7 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 11400000, guid: 117512193457f4b35994eedc14532276, type: 3}
+  m_Model: {fileID: 5022602860645237092, guid: 3023baddad66c48879a18b7b51ee84ba, type: 3}
   m_InferenceDevice: 2
   m_BehaviorType: 0
   m_BehaviorName: Worm
