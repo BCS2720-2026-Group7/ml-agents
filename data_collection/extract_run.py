@@ -246,8 +246,33 @@ def existing_run_ids(path):
         return {r["run_id"] for r in csv.DictReader(f)}
 
 
-def append_rows(path, columns, rows, skip_run_ids=()):
-    rows = [r for r in rows if r["run_id"] not in skip_run_ids]
+def drop_partial_last_line(path):
+    """If an earlier write stopped halfway through a line, cut that unfinished line off."""
+    if not os.path.exists(path):
+        return
+    with open(path, "rb+") as f:
+        data = f.read()
+        if data and not data.endswith(b"\n"):
+            f.truncate(data.rfind(b"\n") + 1)
+
+
+def existing_progression_keys(path):
+    """(run_id, step) pairs already saved in progression.csv."""
+    if not os.path.exists(path):
+        return set()
+    keys = set()
+    with open(path, newline="") as f:
+        for r in csv.DictReader(f):
+            if None in r.values():
+                continue  # incomplete row
+            try:
+                keys.add((r["run_id"], int(float(r["step"]))))
+            except (KeyError, TypeError, ValueError):
+                pass  # skip a broken line, e.g. from an interrupted write
+    return keys
+
+
+def append_rows(path, columns, rows):
     if not rows:
         return
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
@@ -278,6 +303,8 @@ def main():
         print("Warning: tensorboard not installed -> no progression.csv, "
               "rewards taken from timers.json")
 
+    for path in (args.out, args.progression):
+        drop_partial_last_line(path)
     done = existing_run_ids(args.out)
     hardware = get_hardware()
     runs, progression = [], []
@@ -300,9 +327,11 @@ def main():
 
     # progression.csv is written first and runs.csv last: a run only counts as done
     # once it is in runs.csv, so if a write fails the run is extracted again next time.
-    # Runs already in progression.csv are not written there twice.
-    append_rows(args.progression, PROGRESSION_COLUMNS, progression,
-                skip_run_ids=existing_run_ids(args.progression))
+    # Steps already in progression.csv (same run_id and step) are not written twice,
+    # so a write that stopped halfway through a run is completed on the next attempt.
+    saved = existing_progression_keys(args.progression)
+    progression = [p for p in progression if (p["run_id"], p["step"]) not in saved]
+    append_rows(args.progression, PROGRESSION_COLUMNS, progression)
     append_rows(args.out, RUN_COLUMNS, runs)
     print(f"\n{len(runs)} new run(s) -> {args.out}")
 
