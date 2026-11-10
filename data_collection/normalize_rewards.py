@@ -39,7 +39,7 @@ def main():
     parser.add_argument("input", help="CSV file, e.g. data/runs.csv")
     parser.add_argument("--column", default="mean_reward_last3", help="reward column to normalise")
     parser.add_argument("--only-usable", action="store_true",
-                        help="only use rows with usable_500k = True (for previous_year_runs.csv)")
+                        help="only normalise rows with usable_500k = True, other rows stay with an empty value")
     parser.add_argument("--clip", action="store_true",
                         help="use IQR outlier limits instead of plain min/max")
     parser.add_argument("--out", help="output file (default: <input>_normalized.csv)")
@@ -50,12 +50,16 @@ def main():
         columns = reader.fieldnames
         rows = list(reader)
 
+    # keep all rows in the output, but only use the usable ones for min/max
+    all_rows = rows
     if args.only_usable:
-        rows = [r for r in rows if r.get("usable_500k") == "True"]
+        rows_to_normalize = [r for r in all_rows if r.get("usable_500k") == "True"]
+    else:
+        rows_to_normalize = all_rows
 
     # 1) collect all rewards per (environment, algorithm)
     groups = {}
-    for r in rows:
+    for r in rows_to_normalize:
         value = to_float(r[args.column])
         if value is None:
             continue
@@ -80,7 +84,10 @@ def main():
     new_column = args.column + "_norm"
     skipped = 0
     clipped = 0
-    for r in rows:
+    for r in all_rows:
+        if args.only_usable and r.get("usable_500k") != "True":
+            r[new_column] = ""    # not usable -> no normalised value
+            continue
         value = to_float(r[args.column])
         key = (r["environment"], r["drl_algorithm"].upper())
         if value is None or key not in limits:
@@ -106,8 +113,8 @@ def main():
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=columns + [new_column])
         writer.writeheader()
-        writer.writerows(rows)
-    print(f"\n{len(rows)} rows -> {out}")
+        writer.writerows(all_rows)
+    print(f"\n{len(all_rows)} rows -> {out}")
 
 
 if __name__ == "__main__":
