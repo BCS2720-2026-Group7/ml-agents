@@ -29,3 +29,7 @@ Source: shared repo `DennisSoemers/BCS2720-project-data-collection`, folder `AY 
 - Normalise our runs and other groups' runs together (same min/max); in phase 3 compute min/max on the training split only.
 - Spearman rank for the Worm -> Walker transfer test once the same configurations are run on both environments.
 - Repeat for this year's groups once they upload data (all AY 2026-2027 folders were still empty on 10 Nov).
+
+## Limitations
+- Rewards are normalised per environment + algorithm, so a normalised value (e.g. 0.8) is relative to the other runs of that group and is not directly comparable between Worm and Walker. For the transfer test we compare rankings (Spearman), which does not need the same scale.
+- Only 1 usable Walker SAC run (and 3 Worm SAC), so Walker SAC cannot be normalised and SAC analysis is limited. Our own SAC runs are needed to fill this gap.
