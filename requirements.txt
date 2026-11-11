@@ -144,6 +144,8 @@ protobuf==3.20.3
     #   mlagents-envs
     #   onnx
     #   tensorboard
+psutil==7.2.2
+    # via -r requirements.in
 pypiwin32==223 ; sys_platform == 'win32'
     # via mlagents
 pywin32==312 ; sys_platform == 'win32'
