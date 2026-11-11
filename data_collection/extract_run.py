@@ -276,7 +276,7 @@ def append_rows(path, columns, rows):
     if not rows:
         return
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    new_file = not os.path.exists(path)
+    new_file = not os.path.exists(path) or os.path.getsize(path) == 0
     with open(path, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         if new_file:
@@ -316,7 +316,7 @@ def main():
             continue
         try:
             row, prog = extract_run(run_dir, hardware)
-        except (OSError, KeyError, StopIteration) as e:
+        except Exception as e:
             print(f"error  {run_id}: {e!r}")
             continue
         runs.append(row)
