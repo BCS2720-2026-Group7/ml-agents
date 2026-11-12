@@ -8,7 +8,7 @@ for i in os.scandir('./params'):
     if i.is_file():
         runID = pathlib.Path(i.name).stem
         print("Running", runID)
-        cmd = ["mlagents-learn", i.path, "--env", "Project/Build/Worm/Worm.x86_64", "--no-graphics", "--run-id", runID, "--force"]
+        cmd = ["mlagents-learn", i.path, "--env", "Project/Build/Worm/Worm.x86_64", "--no-graphics", "--run-id", runID, "--force", "--results-dir", "harness/hand-off"]
         process = subprocess.Popen(cmd)
         # Samples CPU/RAM of mlagents-learn and the Unity build every second
         # -> results/<runID>/run_logs/resource_usage.csv (returns when training ends)

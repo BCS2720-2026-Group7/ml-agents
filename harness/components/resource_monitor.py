@@ -155,7 +155,7 @@ def summarize_resource_usage(csv_path):
     return summary
 
 # CLI STUFF BELOW
-def default_output_path(run_id, results_dir="results"):
+def default_output_path(run_id, results_dir="harness/hand-off"):
     return os.path.join(results_dir, run_id, "run_logs", "resource_usage.csv")
 
 

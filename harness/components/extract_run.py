@@ -24,14 +24,10 @@ import platform
 import subprocess
 import threading
 import time
-from datetime import datetime, timezone
-
 import yaml
-
-try:
-    import psutil
-except ImportError:
-    psutil = None
+import psutil
+from harness.components.resource_monitor import summarize_resource_usage
+from datetime import datetime, timezone
 
 try:
     from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
@@ -61,24 +57,6 @@ TB_TAGS = {
     "Policy/Entropy": "entropy",
     "Policy/Learning Rate": "learning_rate",
 }
-
-
-def monitor_resources(stop_event, result_dict):
-    if psutil is None:
-        return
-    peak_ram = 0
-    cpu_usages = []
-    while not stop_event.is_set():
-        try:
-            current_ram = psutil.Process().memory_info().rss / (1024 * 1024)
-            if current_ram > peak_ram:
-                peak_ram = current_ram
-            cpu_usages.append(psutil.cpu_percent(interval=0.5))
-        except Exception:
-            pass
-    result_dict["peak_ram_mb"] = round(peak_ram, 2)
-    result_dict["avg_cpu_percent"] = round(sum(cpu_usages) / len(cpu_usages), 2) if cpu_usages else 0.0
-
 
 def get_cpu_model():
     system = platform.system()
@@ -117,26 +95,21 @@ def get_os_name():
         return f"Windows {11 if build >= 22000 else 10} (build {build})"
     if platform.system() == "Darwin":
         return f"macOS {platform.mac_ver()[0]}"
+    if platform.system() == "Linux":
+        return "Linux"
     return f"{platform.system()} {platform.release()}"
 
 
 def get_hardware():
-    hw = {
+    return {
         "cpu_model": get_cpu_model(),
-        "cpu_cores": None,
+        "cpu_cores": psutil.cpu_count(logical=False),
         "cpu_threads": os.cpu_count(),
-        "cpu_frequency_mhz": None,
-        "total_ram_gb": None,
+        "cpu_frequency_mhz": round(psutil.cpu_freq().max) if psutil.cpu_freq() else None,
+        "total_ram_gb": round(psutil.virtual_memory().total / 1024 ** 3, 2),
         "gpu_model": get_gpu_model(),
         "operating_system": get_os_name(),
     }
-    if psutil is not None:
-        hw["cpu_cores"] = psutil.cpu_count(logical=False)
-        freq = psutil.cpu_freq()
-        if freq is not None:
-            hw["cpu_frequency_mhz"] = round(freq.max or freq.current)
-        hw["total_ram_gb"] = round(psutil.virtual_memory().total / 1024 ** 3, 2)
-    return hw
 
 
 def read_config(run_dir):
@@ -229,14 +202,6 @@ def extract_run(run_dir, hardware):
     run_id = os.path.basename(os.path.normpath(run_dir))
     environment, hyperparameters = read_config(run_dir)
 
-    resource_stats = {}
-    if psutil is not None:
-        stop_event = threading.Event()
-        monitor_thread = threading.Thread(target=monitor_resources, args=(stop_event, resource_stats))
-        monitor_thread.start()
-    else:
-        resource_stats = {"peak_ram_mb": None, "avg_cpu_percent": None}
-
     row = {"run_id": run_id, "environment": environment}
     row.update(hardware)
     row.update(hyperparameters)
@@ -251,12 +216,10 @@ def extract_run(run_dir, hardware):
         last3 = rewards[-3:]
         row["mean_reward_last3"] = sum(last3) / len(last3)
 
-    if psutil is not None:
-        stop_event.set()
-        monitor_thread.join()
-        row.update(resource_stats)
-    else:
-        row.update(resource_stats)
+    csv_path = os.path.join(run_dir, "run_logs", "resource_usage.csv")
+    hw_summary = summarize_resource_usage(csv_path)
+    row["peak_ram_mb"] = hw_summary.get("process_ram_mb_max", 0.0)
+    row["avg_cpu_percent"] = hw_summary.get("process_cpu_percent_mean", 0.0)
 
     for p in progression:
         p["run_id"] = run_id
@@ -311,8 +274,8 @@ def main():
     parser.add_argument("run_dirs", nargs="*", help="results/<run_id> folders")
     parser.add_argument("--all", metavar="RESULTS_DIR",
                         help="extract every run folder inside RESULTS_DIR")
-    parser.add_argument("--out", default="data/runs.csv")
-    parser.add_argument("--progression", default="data/progression.csv")
+    parser.add_argument("--out", default="harness/results/runs.csv")
+    parser.add_argument("--progression", default="harness/results/progression.csv")
     args = parser.parse_args()
 
     run_dirs = list(args.run_dirs)
