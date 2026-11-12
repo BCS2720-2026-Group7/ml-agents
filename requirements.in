@@ -1,0 +1,4 @@
+./ml-agents-envs
+./ml-agents
+setuptools==80.10.2
+psutil

@@ -129,7 +129,7 @@ namespace Unity.MLAgents.Extensions.Sensors
                 // No velocity on the virtual root
                 return Vector3.zero;
             }
-            return m_Bodies[index].velocity;
+            return m_Bodies[index].linearVelocity;
         }
 
         /// <inheritdoc/>
