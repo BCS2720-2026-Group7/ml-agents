@@ -4,7 +4,7 @@ import pathlib
 
 from harness.components.resource_monitor import monitor, default_output_path
 
-for i in os.scandir('./params'):
+for i in os.scandir('harness/hand-off/params'):
     if i.is_file():
         runID = pathlib.Path(i.name).stem
         print("Running", runID)

@@ -1,0 +1,27 @@
+behaviors:
+  Worm:
+    hyperparameters:
+      batch_size: 256
+      buffer_init_steps: 0
+      buffer_size: 500000
+      init_entcoef: 1.0
+      learning_rate: 0.0003
+      learning_rate_schedule: constant
+      reward_signal_steps_per_update: 20.0
+      save_replay_buffer: false
+      steps_per_update: 20.0
+      tau: 0.005
+    keep_checkpoints: 5
+    max_steps: 5000000
+    network_settings:
+      hidden_units: 256
+      normalize: true
+      num_layers: 3
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    summary_freq: 30000
+    time_horizon: 1000
+    trainer_type: sac
