@@ -2,7 +2,7 @@ import os
 import subprocess
 import pathlib
 
-from data_collection.resource_monitor import monitor, default_output_path
+from harness.components.resource_monitor import monitor, default_output_path
 
 for i in os.scandir('./params'):
     if i.is_file():
