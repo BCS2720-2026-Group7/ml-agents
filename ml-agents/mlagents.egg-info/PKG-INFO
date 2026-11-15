@@ -1,0 +1,38 @@
+Metadata-Version: 2.4
+Name: mlagents
+Version: 0.31.0.dev0
+Summary: Unity Machine Learning Agents
+Home-page: https://github.com/Unity-Technologies/ml-agents
+Author: Unity Technologies
+Author-email: ML-Agents@unity3d.com
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Requires-Python: >=3.8.13,<=3.10.22
+Description-Content-Type: text/markdown
+Requires-Dist: grpcio>=1.11.0
+Requires-Dist: h5py>=2.9.0
+Requires-Dist: mlagents_envs==0.31.0.dev0
+Requires-Dist: numpy<2.0,>=1.13.3
+Requires-Dist: Pillow>=4.2.1
+Requires-Dist: protobuf>=3.6
+Requires-Dist: pyyaml>=3.1.0
+Requires-Dist: torch>=1.8.0; platform_system != "Windows" and python_version >= "3.9"
+Requires-Dist: torch>=1.6.0; platform_system != "Windows" and python_version < "3.9"
+Requires-Dist: tensorboard>=1.15
+Requires-Dist: cattrs<1.1.0; python_version < "3.8"
+Requires-Dist: cattrs<1.7,>=1.1.0; python_version >= "3.8"
+Requires-Dist: attrs>=19.3.0
+Requires-Dist: pypiwin32==223; platform_system == "Windows"
+Requires-Dist: importlib_metadata==4.4; python_version < "3.8"
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
