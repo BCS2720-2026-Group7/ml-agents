@@ -3,7 +3,8 @@ import itertools
 import yaml
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PARAMS_DIR = os.path.join(BASE_DIR, "harness", "hand-off", "params")
+PARAMS_DIR = os.path.join(BASE_DIR, "harness", "params", "worm")
+os.makedirs(PARAMS_DIR, exist_ok=True)
 
 def generate_ppo_sweep():
     template_path = os.path.join(BASE_DIR, "config", "ppo", "Worm.yaml")
@@ -30,11 +31,9 @@ def generate_ppo_sweep():
 
     print(f"Generating {len(combinations)} PPO configurations...") #ui for general knowledge
 
-    for combo in combinations:
+    for count, combo in enumerate(combinations, start=1):
         params = dict(zip(keys, combo))
-
         config = yaml.safe_load(yaml.dump(base_config)) #copy base config
-
         behavior = config["behaviors"]["Worm"] #search file
 
         #update lerning rate & epsilon
@@ -50,14 +49,7 @@ def generate_ppo_sweep():
         behavior["network_settings"]["num_layers"] = params["num_layers"]
 
         #custom filename
-        run_name = (
-            f"worm_ppo"
-            f"_lr_{params['learning_rate']}"
-            f"_hu_{params['hidden_units']}"
-            f"_nl_{params['num_layers']}"
-            f"_g_{params['gamma']}"
-            f"_eps_{params['epsilon']}"
-        )
+        run_name = f"{count}-ppo-worm"
 
         #push file
         out_path = os.path.join(PARAMS_DIR, f"{run_name}.yaml")
@@ -92,7 +84,7 @@ def generate_sac_sweep():
 
     print(f"Generating {len(combinations)} SAC configurations...") #ui for general knowledge
 
-    for combo in combinations:
+    for count, combo in enumerate(combinations, start=1):
         params = dict(zip(keys, combo))
 
         config = yaml.safe_load(yaml.dump(base_config)) #copy base config
@@ -112,14 +104,7 @@ def generate_sac_sweep():
         behavior["network_settings"]["num_layers"] = params["num_layers"]
 
         #custom filename
-        run_name = (
-            f"worm_sac"
-            f"_lr_{params['learning_rate']}"
-            f"_hu_{params['hidden_units']}"
-            f"_nl_{params['num_layers']}"
-            f"_g_{params['gamma']}"
-            f"_bs_{params['buffer_size']}"
-        )
+        run_name = f"{count}-sac-worm"
 
         #push file
         out_path = os.path.join(PARAMS_DIR, f"{run_name}.yaml") 

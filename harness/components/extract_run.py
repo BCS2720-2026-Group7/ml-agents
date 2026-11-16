@@ -1,32 +1,13 @@
 """
-Extract one CSV row per ML-Agents training run.
-
-Reads a results folder created by `mlagents-learn` (results/<run_id>/) and writes:
-  - data/runs.csv         one row per run: hardware, hyperparameters, training time, performance
-  - data/progression.csv  one row per summary step: reward curve of every run
-
-Usage (from the ml-agents root, with the venv active):
-    python data_collection/extract_run.py results/worm_test1 results/worm_lr1e-3
-    python data_collection/extract_run.py --all results
-
-Runs that are already in runs.csv (same run_id) are skipped, so the script can be
-re-run safely after every new training run.
-
-Note: hardware columns describe the machine the script runs on, so run it on the
-same machine that did the training.
+Extracts data for a SINGLE training run and outputs unique CSV files to avoid race conditions.
+Returns exit code 0 on success (so the runner can clean up) or 1 on failure.
 """
 
-import argparse
 import csv
 import json
 import os
-import platform
-import subprocess
-import threading
-import time
+import sys
 import yaml
-import psutil
-from harness.components.resource_monitor import summarize_resource_usage
 from datetime import datetime, timezone
 
 try:
@@ -34,18 +15,15 @@ try:
 except ImportError:
     EventAccumulator = None
 
-
 RUN_COLUMNS = [
     "run_id", "timestamp", "environment", "drl_algorithm", "seed",
-    "cpu_model", "cpu_cores", "cpu_threads", "cpu_frequency_mhz", "total_ram_gb",
-    "gpu_model", "operating_system", "torch_version", "mlagents_version",
+    "torch_version", "mlagents_version",
     "batch_size", "buffer_size", "learning_rate", "learning_rate_schedule",
     "hidden_units", "num_layers", "normalize", "gamma", "max_steps", "time_horizon",
     "beta", "epsilon", "lambda", "num_epoch",
     "tau", "steps_per_update", "init_entcoef", "buffer_init_steps",
     "total_steps", "time_elapsed_seconds",
-    "cumulative_reward_mean", "max_reward", "mean_reward_last3",
-    "peak_ram_mb", "avg_cpu_percent"
+    "cumulative_reward_mean", "max_reward", "mean_reward_last3"
 ]
 
 PROGRESSION_COLUMNS = ["run_id", "step", "cumulative_reward", "episode_length",
@@ -57,60 +35,6 @@ TB_TAGS = {
     "Policy/Entropy": "entropy",
     "Policy/Learning Rate": "learning_rate",
 }
-
-def get_cpu_model():
-    system = platform.system()
-    try:
-        if system == "Windows":
-            import winreg
-            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                                 r"HARDWARE\DESCRIPTION\System\CentralProcessor\0")
-            return winreg.QueryValueEx(key, "ProcessorNameString")[0].strip()
-        if system == "Darwin":
-            return subprocess.check_output(
-                ["sysctl", "-n", "machdep.cpu.brand_string"], text=True).strip()
-        if system == "Linux":
-            with open("/proc/cpuinfo") as f:
-                for line in f:
-                    if line.startswith("model name"):
-                        return line.split(":", 1)[1].strip()
-    except Exception:
-        pass
-    return platform.processor() or "unknown"
-
-
-def get_gpu_model():
-    try:
-        out = subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
-            text=True, timeout=10)
-        return out.strip().splitlines()[0]
-    except Exception:
-        return "none/unknown"
-
-
-def get_os_name():
-    if platform.system() == "Windows":
-        build = int(platform.version().split(".")[-1])
-        return f"Windows {11 if build >= 22000 else 10} (build {build})"
-    if platform.system() == "Darwin":
-        return f"macOS {platform.mac_ver()[0]}"
-    if platform.system() == "Linux":
-        return "Linux"
-    return f"{platform.system()} {platform.release()}"
-
-
-def get_hardware():
-    return {
-        "cpu_model": get_cpu_model(),
-        "cpu_cores": psutil.cpu_count(logical=False),
-        "cpu_threads": os.cpu_count(),
-        "cpu_frequency_mhz": round(psutil.cpu_freq().max) if psutil.cpu_freq() else None,
-        "total_ram_gb": round(psutil.virtual_memory().total / 1024 ** 3, 2),
-        "gpu_model": get_gpu_model(),
-        "operating_system": get_os_name(),
-    }
-
 
 def read_config(run_dir):
     with open(os.path.join(run_dir, "configuration.yaml")) as f:
@@ -143,9 +67,6 @@ def read_config(run_dir):
         "buffer_init_steps": hp.get("buffer_init_steps"),
     }
 
-
-
-
 def read_timers(run_dir, environment):
     with open(os.path.join(run_dir, "run_logs", "timers.json")) as f:
         timers = json.load(f)
@@ -169,7 +90,6 @@ def read_timers(run_dir, environment):
         "max_reward": reward.get("max"),
     }
 
-
 def read_total_steps(run_dir, environment):
     with open(os.path.join(run_dir, "run_logs", "training_status.json")) as f:
         status = json.load(f)
@@ -180,7 +100,6 @@ def read_total_steps(run_dir, environment):
             if isinstance(v, dict) and "final_checkpoint" in v:
                 return v["final_checkpoint"]["steps"]
         return 0
-
 
 def read_progression(run_dir, environment):
     if EventAccumulator is None:
@@ -197,13 +116,11 @@ def read_progression(run_dir, environment):
             rows.setdefault(e.step, {"step": e.step})[column] = e.value
     return [rows[s] for s in sorted(rows)]
 
-
-def extract_run(run_dir, hardware):
+def extract_run(run_dir):
     run_id = os.path.basename(os.path.normpath(run_dir))
     environment, hyperparameters = read_config(run_dir)
 
     row = {"run_id": run_id, "environment": environment}
-    row.update(hardware)
     row.update(hyperparameters)
     row.update(read_timers(run_dir, environment))
     row["total_steps"] = read_total_steps(run_dir, environment)
@@ -216,105 +133,46 @@ def extract_run(run_dir, hardware):
         last3 = rewards[-3:]
         row["mean_reward_last3"] = sum(last3) / len(last3)
 
-    csv_path = os.path.join(run_dir, "run_logs", "resource_usage.csv")
-    hw_summary = summarize_resource_usage(csv_path)
-    row["peak_ram_mb"] = hw_summary.get("process_ram_mb_max", 0.0)
-    row["avg_cpu_percent"] = hw_summary.get("process_cpu_percent_mean", 0.0)
-
     for p in progression:
         p["run_id"] = run_id
     return row, progression
 
-
-def existing_run_ids(path):
-    if not os.path.exists(path):
-        return set()
-    with open(path, newline="") as f:
-        return {r["run_id"] for r in csv.DictReader(f)}
-
-
-def drop_partial_last_line(path):
-    if not os.path.exists(path):
-        return
-    with open(path, "rb+") as f:
-        data = f.read()
-        if data and not data.endswith(b"\n"):
-            f.truncate(data.rfind(b"\n") + 1)
-
-
-def existing_progression_keys(path):
-    if not os.path.exists(path):
-        return set()
-    keys = set()
-    with open(path, newline="") as f:
-        for r in csv.DictReader(f):
-            if None in r.values():
-                continue
-            try:
-                keys.add((r["run_id"], int(float(r["step"]))))
-            except (KeyError, TypeError, ValueError):
-                pass
-    return keys
-
-
-def append_rows(path, columns, rows):
-    if not rows:
-        return
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    new_file = not os.path.exists(path)
-    with open(path, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=columns)
-        if new_file:
-            writer.writeheader()
-        writer.writerows(rows)
-
-
 def main():
-    parser = argparse.ArgumentParser(description="Turn ML-Agents results folders into CSV rows.")
-    parser.add_argument("run_dirs", nargs="*", help="results/<run_id> folders")
-    parser.add_argument("--all", metavar="RESULTS_DIR",
-                        help="extract every run folder inside RESULTS_DIR")
-    parser.add_argument("--out", default="harness/results/runs.csv")
-    parser.add_argument("--progression", default="harness/results/progression.csv")
-    args = parser.parse_args()
+    if len(sys.argv) != 2:
+        print("Usage: python -m harness.components.extract_run <run_dir>")
+        sys.exit(1)
+        
+    run_dir = sys.argv[1]
+    if not os.path.isdir(run_dir):
+        print(f"Error: Directory {run_dir} not found.")
+        sys.exit(1)
 
-    run_dirs = list(args.run_dirs)
-    if args.all:
-        run_dirs += [os.path.join(args.all, d) for d in sorted(os.listdir(args.all))]
-    run_dirs = [d for d in run_dirs if os.path.isfile(os.path.join(d, "configuration.yaml"))]
+    run_id = os.path.basename(os.path.normpath(run_dir))
+    results_dir = os.path.join("harness", "results", f"{run_id}-results")
+    os.makedirs(results_dir, exist_ok=True)
+    
+    runs_csv_path = os.path.join(results_dir, f"{run_id}_runs.csv")
+    progression_csv_path = os.path.join(results_dir, f"{run_id}_progression.csv")
 
-    if EventAccumulator is None:
-        print("Warning: tensorboard not installed -> no progression.csv, "
-              "rewards taken from timers.json")
+    try:
+        row, progression = extract_run(run_dir)
+    except Exception as e:
+        print(f"Error extracting {run_id}: {e!r}")
+        sys.exit(1)
 
-    for path in (args.out, args.progression):
-        drop_partial_last_line(path)
-    done = existing_run_ids(args.out)
-    hardware = get_hardware()
-    runs, progression = [], []
+    with open(runs_csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=RUN_COLUMNS)
+        writer.writeheader()
+        writer.writerow(row)
 
-    for run_dir in run_dirs:
-        run_id = os.path.basename(os.path.normpath(run_dir))
-        if run_id in done:
-            print(f"skip   {run_id} (already in {args.out})")
-            continue
-        try:
-            row, prog = extract_run(run_dir, hardware)
-        except (OSError, KeyError, StopIteration) as e:
-            print(f"error  {run_id}: {e!r}")
-            continue
-        runs.append(row)
-        progression += prog
-        done.add(run_id)
-        print(f"added  {run_id}: {row['total_steps']} steps, "
-              f"{row['time_elapsed_seconds']} s, reward {row['cumulative_reward_mean']}")
+    if progression:
+        with open(progression_csv_path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=PROGRESSION_COLUMNS)
+            writer.writeheader()
+            writer.writerows(progression)
 
-    saved = existing_progression_keys(args.progression)
-    progression = [p for p in progression if (p["run_id"], p["step"]) not in saved]
-    append_rows(args.progression, PROGRESSION_COLUMNS, progression)
-    append_rows(args.out, RUN_COLUMNS, runs)
-    print(f"\n{len(runs)} new run(s) -> {args.out}")
-
+    print(f"Extraction successful: {run_id}")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()

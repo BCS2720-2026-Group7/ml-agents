@@ -1,5 +1,5 @@
 # 1. Harness
-harness/hand-off/params/*
+harness/params/*
 harness/hand-off/*
 harness/results/*.csv
 
