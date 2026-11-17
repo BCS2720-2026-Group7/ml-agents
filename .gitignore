@@ -1,10 +1,16 @@
 # 1. Harness
 harness/params/worm/*
+!harness/params/worm/.gitkeep
 harness/params/walker/*
+!harness/params/walker/.gitkeep
 harness/results/*
+!harness/results/.gitkeep
 harness/errors/*
+!harness/errors/.gitkeep
 harness/hand-off/*.yaml
+!harness/hand-off/.gitkeep
 harness/hand-off/temp/*
+!harness/hand-off/temp/.gitkeep
 
 # 2. Python
 venv/
