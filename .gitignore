@@ -1,7 +1,10 @@
 # 1. Harness
-harness/params/*
-harness/hand-off/*
-harness/results/*.csv
+harness/params/worm/*
+harness/params/walker/*
+harness/results/*
+harness/errors/*
+harness/hand-off/*.yaml
+harness/hand-off/temp/*
 
 # 2. Python
 venv/
