@@ -8,7 +8,6 @@ __pycache__/
 *.pyd
 
 # 2. Unity
-Project/Build/
 Project/Library/
 Project/Logs/
 Project/Temp/
