@@ -1,18 +1,4 @@
-# 1. Harness
-harness/params/worm/*
-!harness/params/worm/.gitkeep
-harness/params/walker/*
-!harness/params/walker/.gitkeep
-harness/results/*
-!harness/results/.gitkeep
-harness/errors/*
-!harness/errors/.gitkeep
-harness/hand-off/*.yaml
-!harness/hand-off/.gitkeep
-harness/hand-off/temp/*
-!harness/hand-off/temp/.gitkeep
-
-# 2. Python
+# 1. Python
 venv/
 .mypy_cache/
 .pytest_cache/
@@ -21,7 +7,7 @@ __pycache__/
 *.pyo
 *.pyd
 
-# 3. Unity
+# 2. Unity
 Project/Build/
 Project/Library/
 Project/Logs/
@@ -34,7 +20,7 @@ Project/obj/
 *.pidb.meta
 sysinfo.txt
 
-# 4. OS
+# 3. OS
 .DS_Store
 .vscode/
 .idea/
