@@ -3,15 +3,15 @@ import itertools
 import yaml
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PARAMS_DIR = os.path.join(BASE_DIR, "harness", "params", "worm")
+PARAMS_DIR = os.path.join(BASE_DIR, "harness", "params", "walker")
 os.makedirs(PARAMS_DIR, exist_ok=True)
 
 def generate_ppo_sweep():
-    template_path = os.path.join(BASE_DIR, "config", "ppo", "Worm.yaml")
+    template_path = os.path.join(BASE_DIR, "config", "ppo", "Walker.yaml")
 
     #get file
     if not os.path.exists(template_path):
-        template_path = os.path.join(BASE_DIR, "Worm_ppo.yaml")
+        template_path = os.path.join(BASE_DIR, "Walker_ppo.yaml")
 
     with open(template_path, "r") as f:
         base_config = yaml.safe_load(f)
@@ -34,7 +34,7 @@ def generate_ppo_sweep():
     for count, combo in enumerate(combinations, start=1):
         params = dict(zip(keys, combo))
         config = yaml.safe_load(yaml.dump(base_config)) #copy base config
-        behavior = config["behaviors"]["Worm"] #search file
+        behavior = config["behaviors"]["Walker"] #search file
 
         #update lerning rate & epsilon
         behavior["hyperparameters"]["learning_rate"] = params["learning_rate"] 
@@ -49,7 +49,7 @@ def generate_ppo_sweep():
         behavior["network_settings"]["num_layers"] = params["num_layers"]
 
         #custom filename
-        run_name = f"{count}-ppo-worm"
+        run_name = f"{count}-ppo-walker"
 
         #push file
         out_path = os.path.join(PARAMS_DIR, f"{run_name}.yaml")
@@ -60,11 +60,11 @@ def generate_ppo_sweep():
 
 
 def generate_sac_sweep():
-    template_path = os.path.join(BASE_DIR, "config", "sac", "Worm.yaml")
+    template_path = os.path.join(BASE_DIR, "config", "sac", "Walker.yaml")
 
     #get file
     if not os.path.exists(template_path):
-        template_path = os.path.join(BASE_DIR, "Worm_sac.yaml")
+        template_path = os.path.join(BASE_DIR, "Walker_sac.yaml")
 
     with open(template_path, "r") as f:
         base_config = yaml.safe_load(f)
@@ -89,7 +89,7 @@ def generate_sac_sweep():
 
         config = yaml.safe_load(yaml.dump(base_config)) #copy base config
 
-        behavior = config["behaviors"]["Worm"]#search file
+        behavior = config["behaviors"]["Walker"]#search file
 
         #update learning rate & buffer size
         behavior["hyperparameters"]["learning_rate"] = params["learning_rate"]
@@ -104,7 +104,7 @@ def generate_sac_sweep():
         behavior["network_settings"]["num_layers"] = params["num_layers"]
 
         #custom filename
-        run_name = f"{count}-sac-worm"
+        run_name = f"{count}-sac-walker"
 
         #push file
         out_path = os.path.join(PARAMS_DIR, f"{run_name}.yaml") 

@@ -12,7 +12,7 @@ if len(sys.argv) != 2:
 
 envCount = int(sys.argv[1])
 
-INPUT_DIR = os.path.join("harness", "params", "worm")
+INPUT_DIR = os.path.join("harness", "params", "walker")
 TEMP_DIR = os.path.join("harness", "hand-off", "temp")
 ERRORS_DIR = os.path.join("harness", "errors")
 RESULTS_DIR = os.path.join("harness", "results")
@@ -23,7 +23,7 @@ os.makedirs(ERRORS_DIR, exist_ok=True)
 # Once per seed
 seeds = [0, 1, 2]
 
-HARD_CAP = 6
+HARD_CAP = 2
 parallelCounts = min(HARD_CAP, max(1, os.cpu_count() - 2))
 
 portQueue = queue.Queue()
@@ -48,7 +48,7 @@ def run(entry, seed):
         try:
             cmd = [
                 "mlagents-learn", temp_yaml,
-                "--env", "Project/Build/Worm/Worm.x86_64",
+                "--env", "Project/Build/Walker/Walker.x86_64",
                 "--no-graphics", "--run-id", runID, "--force", "--seed", str(seed),
                 "--num-envs", str(envCount), "--base-port", str(port),
                 "--results-dir", TEMP_DIR
