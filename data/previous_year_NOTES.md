@@ -4,7 +4,7 @@ Source: shared repo `DennisSoemers/BCS2720-project-data-collection`, folder `AY 
 
 ## Scripts
 - `data_collection/standardize_previous.py` – brings Worm/Walker runs of Groups 1, 14, 15, 16 into our column names
-  and computes `reward_at_500k` (mean of the last 3 reward summaries up to 500k steps, same idea as `mean_reward_last3`).
+  and computes `reward_at_500k` (mean of the last 3 reward summaries with step <= 515k, usable only if the last one is at >= 485k; same idea as `mean_reward_last3`).
   Usage: `python data_collection/standardize_previous.py "<path>/AY 2025-2026" data/previous_year_runs.csv`
 - `data_collection/normalize_rewards.py` – min-max normalisation of a reward column per environment + algorithm.
   `--clip` uses the IQR outlier limits (Q1 - 1.5*IQR, Q3 + 1.5*IQR) instead of plain min/max; outliers get 0/1 but stay in the data.
@@ -33,3 +33,8 @@ Source: shared repo `DennisSoemers/BCS2720-project-data-collection`, folder `AY 
 ## Limitations
 - Rewards are normalised per environment + algorithm, so a normalised value (e.g. 0.8) is relative to the other runs of that group and is not directly comparable between Worm and Walker. For the transfer test we compare rankings (Spearman), which does not need the same scale.
 - Only 1 usable Walker SAC run (and 3 Worm SAC), so Walker SAC cannot be normalised and SAC analysis is limited. Our own SAC runs are needed to fill this gap.
+
+## Combining with our own runs
+- `data_collection/build_dataset.py` collects the per-run CSVs from `harness/results/` into `data/runs.csv` and `data/progression.csv`, computes `reward_at_500k` for our runs from their reward curve (same rule as above), and writes our runs plus the previous-year runs to `data/all_runs.csv` (column `source_group` = `7 (2026)` for our runs).
+- Values are written in one format for all groups (`True`/`False`, `492000` instead of `492000.0`).
+- Then normalise everything together: `python data_collection/normalize_rewards.py data/all_runs.csv --column reward_at_500k --only-usable --clip`
